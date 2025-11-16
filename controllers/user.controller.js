@@ -47,3 +47,34 @@ export const updateProfilePicture = async (req, res) => {
         res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }
 };
+
+export const followUser = async (req, res) => {
+    try {
+        const targetId = req.params.id;
+        const targetUser = await User.findById(targetId);
+        if (!targetUser) return res.status(404).json({ success: false, message: "User not found" });
+        if (targetUser.role !== "artist") return res.status(400).json({ success: false, message: "You can only follow artists" });
+
+        await User.findByIdAndUpdate(targetId, {$addToSet: { followers: req.user.id }});
+        await User.findByIdAndUpdate(req.user.id, { $addToSet: {following: targetId }});
+
+        res.json({ success: true, message: "User followed successfully" });
+    } catch (error) {
+        console.error("follow user error:", error);
+        res.status(500).json({ success: false, message: "Internal server error", error: error.message });
+    }
+};
+
+//unfollow Artist
+
+export const unFollowUser = async (req, res) => {
+    try {
+        const targetId = req.params.id;
+        await User.findByIdAndUpdate( targetId, { $pull: {followers: req.user.id }});
+        await User.findByIdAndUpdate( req.user.id, { $pull: { following: targetId }});
+        res.json({ success: true, message: "Unfollowed successfully" });
+    } catch (error) {
+        console.error("unfollow user error:", error);
+        res.status(500).json({ success: false, message: "Internal server error", error: error.message });
+    }
+}
